@@ -152,6 +152,7 @@ void StPicoEASkimmer::CreateHistograms() {
   hVtxVpdZ = new TH1F("hVtxVpdZ", "VPD vertex z; z (cm); Entries", 240, -120., 120.);
   hDeltaVz = new TH1F("hDeltaVz", "Delta z (TPC - VPD); #Delta z (cm); Entries", 200, -10., 10.);
   hVtxZvsVpdZ = new TH2F("hVtxZvsVpdZ", "VPD vertex z vs TPC vertex z; z_{VPD} (cm); z_{TPC} (cm)", 240, -120., 120., 240, -120., 120.);
+  hVtxRanking = new TH1F("hVtxRank", "Primary vertex ranking; ranking; Entries", 200, 0, 1000);
 
   hRefMult = new TH1F("hRefMult", "Reference multiplicity; RefMult; Entries", 200, 0, 200);
   hGRefMult = new TH1F("hGRefMult", "Global reference multiplicity; gRefMult; Entries", 200, 0, 200);
@@ -183,6 +184,8 @@ void StPicoEASkimmer::CreateHistograms() {
   hPrimaryNHitsFitRatioVsPt = new TH2D("hPrimaryNHitsFitRatioVsPt", "Primary track nHitsFit/nHitsPoss vs. p_{T}; p_{T} (GeV/c); nHitsFit/nHitsPoss", 200, 0., 20., 100, 0., 1.1);
   hPrimaryDCA = new TH1D("hPrimaryDCA", "Primary track DCA; DCA (cm); Entries", 200, 0., 4.);
   hPrimaryDCAVsPt = new TH2D("hPrimaryDCAVsPt", "Primary track DCA vs. p_{T}; p_{T} (GeV/c); DCA (cm)", 200, 0., 20., 200, 0., 4.);
+  hPrimaryChi2 = new TH1D("hPrimaryChi2", "Primary track chi^{2}/ndf; chi^{2}/ndf; Entries", 100, 0., 10.);
+  hPrimaryChi2VsPt = new TH2D("hPrimaryChi2VsPt", "Primary track chi^{2}/ndf vs. p_{T}; p_{T} (GeV/c); chi^{2}/ndf", 200, 0., 20., 100, 0., 10.);
 
   // TOF QA histograms (
   hPrimaryTofInvBetaVsP = new TH2D("hPrimaryTofInvBetaVsP", "Primary track 1/#beta vs momentum; p (GeV/c); 1/#beta", 200, 0., 20., 200, 0.0, 4.0);
@@ -207,6 +210,7 @@ void StPicoEASkimmer::CreateHistograms() {
 
   // Run Dependence histograms
   hBBCxVsRun = new TH2D("hBBCxVsRun", "BBCx vs Run; Run ID; BBCx", 1000, 0, 1000, 100, 0, 1e7);
+  hVtxRankingVsRun = new TH2D("hVtxRankingVsRun", "Primary vertex ranking vs Run; Run ID; Primary vertex ranking", 1000, 0, 1000, 200, 0, 1000);
   hNPrimariesVsRun = new TH2D("hNPrimariesVsRun", "# primary tracks/event vs Run; Run ID; # primary tracks/event", 1000, 0, 1000, 100, 0, 100);
   hNTofMatchedTracksVsRun = new TH2D("hNTofMatchedTracksVsRun", "# TOF-matched tracks/event vs Run; Run ID; # TOF-matched tracks/event", 1000, 0, 1000, 100, 0, 100);
   hDeltaVZVsRun = new TH2D("hDeltaVZVsRun", "#Delta Vz (TPC - VPD) vs Run; Run ID; #Delta Vz (cm)", 1000, 0, 1000, 200, -10., 10.);
@@ -215,6 +219,7 @@ void StPicoEASkimmer::CreateHistograms() {
   hNHitsFitRatioVsRun = new TH2D("hNHitsFitRatioVsRun", "nHitsFit/nHitsPoss vs Run; Run ID; nHitsFit/nHitsPoss", 1000, 0, 1000, 50, 0., 1.1);
   hDCAVsRun = new TH2D("hDCAVsRun", "DCA vs Run; Run ID; DCA (cm)", 1000, 0, 1000, 50, 0., 4.);
   hDedxVsRun = new TH2D("hDedxVsRun", "dE/dx vs Run; Run ID; dE/dx (keV/cm)", 1000, 0, 1000, 50, 0., 10.);
+  hChi2VsRun = new TH2D("hChi2VsRun", "Primary track chi^{2}/ndf vs Run; Run ID; chi^{2}/ndf", 1000, 0, 1000, 100, 0., 10.);
 
   // BTOW QA histograms
   hBTowEVsId = new TH2D("hBTowEVsId", "BTOW hit energy vs ID; ID; Energy (GeV)", 4800, 0, 4800, 200, 0., 20.);
