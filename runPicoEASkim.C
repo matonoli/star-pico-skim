@@ -10,7 +10,11 @@ class StChain;
 class StPicoDstMaker;
 
 //_________________
-void runPicoEASkim(const char *inFileName = "/star/u/matonoli/st_physics_18141040_raw_1000075.picoDst.root")
+// Can be ran as
+// root4star -q -l runPicoEASkim.C\(\"/star/u/matonoli/st_physics_18141040_raw_1000075.picoDst.root\",\"tmp.root\",200\)
+void runPicoEASkim(const char *inFileName = "/star/u/matonoli/st_physics_18141040_raw_1000075.picoDst.root",
+                   const char *outFileName = "oPicoEASkimmer_1.root",
+                   int maxEvents = -1)
 {
 
   std::cout << "Lets run the StPicoEASkimmer." << std::endl;
@@ -40,8 +44,8 @@ void runPicoEASkim(const char *inFileName = "/star/u/matonoli/st_physics_1814104
 
   std::cout << "Constructing StPicoEASkimmer with StPicoDstMaker" << std::endl;
   // Example of how to create an instance of the StPicoEASkimmer and initialize
-  // it with StPicoDstMaker
-  StPicoEASkimmer *anaMaker1 = new StPicoEASkimmer(picoMaker, "oPicoEASkimmer_1.root");
+  // it with StPicoDstMaker. Use the provided output filename.
+  StPicoEASkimmer *anaMaker1 = new StPicoEASkimmer(picoMaker, outFileName);
   // Add vertex cut
   anaMaker1->setVtxZ(-40., 40.);
   std::cout << "... done" << std::endl;
@@ -57,15 +61,20 @@ void runPicoEASkim(const char *inFileName = "/star/u/matonoli/st_physics_1814104
 
   std::cout << "Lets process data." << std::endl;
   // Retrieve number of events picoDst files
-  int nEvents2Process = picoMaker->chain()->GetEntries();
+  int nEvents2Process = (int)picoMaker->chain()->GetEntries();
   std::cout << " Number of events in files: " << nEvents2Process << std::endl;
-  // Also one can set a very large number to process, whyle the special return
+  // If the user supplied a positive maxEvents, use that as the upper limit.
+  if (maxEvents > 0 && maxEvents < nEvents2Process) {
+    std::cout << " Limiting processing to " << maxEvents << " events as requested." << std::endl;
+    nEvents2Process = maxEvents;
+  }
+  // Also one can set a very large number to process, while the special return
   // flag will send when there will be EndOfFile (EOF)
 
   // Processing events
   for (Int_t iEvent=0; iEvent<nEvents2Process; iEvent++) {
     
-    if( iEvent % 10 == 0 ) std::cout << "Macro: working on event: " << iEvent << std::endl;
+    if( iEvent % 1000 == 0 ) std::cout << "Macro: working on event: " << iEvent << std::endl;
     chain->Clear();
 
     // Check return code

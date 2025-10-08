@@ -84,12 +84,6 @@ class StPicoEASkimmer : public StMaker {
 
   /// Create histograms
   void CreateHistograms();
-  /// Create event histograms
-  void CreateEventHistograms();
-  /// Create track histograms
-  void CreateTrackHistograms();
-  /// Create BEMC hit histograms
-  void CreateBemcHitHistograms();
 
   /// Check the at least one triggers to select is in the event triggers list
   Bool_t IsGoodTrigger(StPicoEvent *event);
@@ -133,6 +127,7 @@ class StPicoEASkimmer : public StMaker {
   // Event histograms
   TH2F *hVtxXvsY;
   TH1F *hVtxZ;
+  TH1F *hVtxVpdZ;
 
   // Track histograms
   TH1D *hGlobalPt;
