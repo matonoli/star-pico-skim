@@ -1,0 +1,6 @@
+.sl73_gcc485/
+StRoot/StPicoEASkimmer/.consign
+temp_gccflags.c
+.vscode/
+
+*.root
