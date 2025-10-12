@@ -39,6 +39,8 @@ void runPicoEASkim(const char *inFileName = "/star/u/matonoli/st_physics_1814104
   picoMaker->SetStatus("Event*", 1);
   picoMaker->SetStatus("Track*", 1);
   picoMaker->SetStatus("BTofPidTraits*", 1);
+  picoMaker->SetStatus("EmcTrigger*", 1);
+  picoMaker->SetStatus("EmcPidTraits*", 1);
   picoMaker->SetStatus("BTowHit*", 1);
   std::cout << "... done" << std::endl;
 
@@ -46,8 +48,68 @@ void runPicoEASkim(const char *inFileName = "/star/u/matonoli/st_physics_1814104
   // Example of how to create an instance of the StPicoEASkimmer and initialize
   // it with StPicoDstMaker. Use the provided output filename.
   StPicoEASkimmer *anaMaker1 = new StPicoEASkimmer(picoMaker, outFileName);
-  // Add vertex cut
-  anaMaker1->setVtxZ(-40., 40.);
+  // Configure allowed triggers (documented mapping)
+  // Mapping: label -> trigger id(s) (some labels include both DAQ id and trigger bit)
+  // BHT1*VPD100: 570204, 29
+  // BHT1*VPD30: 570214
+  // BHT2*BBCMB: 570205, 570215, 30
+  // BHT3: 570201, 16
+  // VPDMB100: 570008
+  // VPDMB30: 570001, 24
+  // VPDMB-novtx: 570004, 55
+  // zerobias: 9300
+  // TofHighMult: 37
+
+  // Older ROOT interpreters (CINT) may not support C++11 initializer_list syntax.
+  // Use a plain C array and a simple loop which is compatible with interpreted macros.
+  unsigned int allowedTriggersArr[] = {
+    570204, 29, 570214, 570205, 570215, 30, 570201, 16,
+    570008, 570001, 24, 570004, 55, 9300, 37
+  };
+  const int nAllowedTriggers = sizeof(allowedTriggersArr) / sizeof(allowedTriggersArr[0]);
+  for (int i = 0; i < nAllowedTriggers; ++i) {
+    anaMaker1->addTriggerId(allowedTriggersArr[i]);
+  }
+
+  // Calculate runIndex map from a runlist text file
+  anaMaker1->LoadRunIndexMap("runlist2017.txt");
+
+
+  // =============================
+  // Cut configuration block (QA and TTree/skimming)
+  // This block centralizes all cut definitions so it's easy to adjust
+  // selection without touching the maker implementation. These calls
+  // are plain function calls and fully compatible with ROOT5/CINT.
+  //
+  // Section 1: QA cuts (used for histograms and general QA)
+  //  - events: vtxZ, vtxR
+  //  - tracks: nHitsFit, nHitsRatio (nHitsFit/nHitsPoss), pT, eta
+  anaMaker1->setVtxZ(-120., 120.);    // TPC primary vertex z-range (cm)
+  anaMaker1->setVtxR(0., 3.);         // primary vertex radial cut (cm)
+  anaMaker1->setNHits(15, 90);        // nHitsFit range (min,max)
+  anaMaker1->setNHitsRatio(0.0, 1.1);// nHitsFit/nHitsPoss (min,max)
+  anaMaker1->setPt(0.15, 50.0);       // track pT (GeV/c)
+  anaMaker1->setEta(-1.2, 1.2);       // track pseudorapidity
+
+  // Section 2: Tree-level (skimming) cuts
+  // These cuts are applied to decide which events/tracks are written
+  // into the compact TTree. They are intentionally separate so you can
+  // have looser QA but stricter skim criteria.
+  // Event-level tree cuts
+  anaMaker1->setTreeVtxZ(-70., 70.);      // TPC vtx z (cm)
+  anaMaker1->setTreeVtxR(0., 2.);          // vtx radial (cm)
+  anaMaker1->setTreeDeltaVz(-5., 5.);   // (TPC vtx z - VPD vtx z) (cm)
+  anaMaker1->setTreeVtxVpdZ(-100., 100.);  // VPD vertex z (wide by default)
+  anaMaker1->setTreeNPrimariesMin(1);     // minimum number of primary tracks
+
+  // Track-level tree cuts
+  anaMaker1->setTreeNHits(15, 90);        // stricter nHitsFit for tree
+  anaMaker1->setTreeNHitsRatio(0.51, 1.1); // stricter hits ratio
+  anaMaker1->setTreeNHitsDedx(10, 90);    // min nHitsDedx for dE/dx
+  anaMaker1->setTreePt(0.2, 50.0);        // pT for tracks stored in tree
+  anaMaker1->setTreeEta(-1.1, 1.1);       // eta for tracks stored in tree
+  anaMaker1->setTreeDCA(0., 2.0);         // DCA cut (cm)
+
   std::cout << "... done" << std::endl;
 
   std::cout << "Initializing chain" << std::endl;

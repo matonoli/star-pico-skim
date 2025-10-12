@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!DOCTYPE job>
+
+<!--
+  Generic STAR scheduler XML template for submitting StPicoEASkimmer jobs.
+  The lightweight generator script (`scripts/generate_xmls.py`) will replace
+  placeholders like __BASEDIR__, __SRCDIR__, __DAYTAG__, __INPUT__ and
+  __SIMULATE__.
+
+  - Use fileListSyntax="xrootd" for local (DD) xrootd filelists
+  - Keep simulateSubmission toggle to allow dry-runs
+  - Capture stdout/stderr into a log directory under the base output dir
+  - Use informative output filenames including a day tag YYMMDD
+-->
+
+<job name="PicoEASkim" maxFilesPerProcess="80" fileListSyntax="xrootd" softLimits="true" filesPerHour="40" simulateSubmission="__SIMULATE__">
+
+  <command>
+    date
+    echo "Job started on `hostname`"
+    # load STAR libraries (adjust label if needed)
+    starver pro
+    # Make sure the executable/steering exists in working dir
+    echo "Contents of working dir:"
+    ls -la
+    # Run the ROOT macro (pass FILELIST and job index from scheduler)
+    root -q -b -l runPicoEASkim.C\("$FILELIST","__$DAYTAG___OUTPREFIX___$JOBINDEX.root",-1\)
+    # Output name will be: <out-prefix>_<daytag>_<jobindex>.root
+    root -q -b -l runPicoEASkim.C\("$FILELIST","__OUTPREFIX__\_\__DAYTAG__\_$JOBINDEX.root",-1\)
+    echo "Finished run at `date`"
+  </command>
+
+  <!-- Input: catalog or filelist. The generator substitutes __INPUT__ -->
+  __INPUT__
+
+  <!-- Two directories under the day-tag folder are used:
+       - __SUBMISSION_DIR__ : submission artifacts (XML, METADATA, steering, scheduler lists)
+       - __OUTPUT_DIR__     : production outputs (*.root) and per-job stdout/stderr
+  -->
+
+  <stdout URL="file:__OUTPUT_DIR__/logs/$JOBID.out"/>
+  <stderr URL="file:__OUTPUT_DIR__/logs/$JOBID.err"/>
+
+  <!-- outputs: move all produced root files to the production/output directory -->
+  <output fromScratch="*.root" toURL="file:__OUTPUT_DIR__/" />
+
+  <Generator>
+    <!-- Generator Location and scripts live in the submission area -->
+    <Location>__SUBMISSION_DIR__/sched/</Location>
+    <ScriptLocation>__SUBMISSION_DIR__/sched/csh/</ScriptLocation>
+    <ListLocation>__SUBMISSION_DIR__/sched/lists/</ListLocation>
+  </Generator>
+
+  <ResourceUsage>
+    <Memory>
+      <MinMemory>1900</MinMemory>
+    </Memory>
+  </ResourceUsage>
+
+  <!-- SandBox: include only what's needed at runtime. The generator will
+       add the compiled libraries and steering macro from the repository. -->
+  <SandBox installer="ZIP">
+    <Package name="LocalSources">
+      __SANDBOX_FILES__
+    </Package>
+  </SandBox>
+
+</job>
