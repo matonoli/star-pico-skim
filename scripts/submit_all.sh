@@ -58,8 +58,18 @@ foreach xml ($xml_list)
     else
         # Actually submit the XML file
         echo "Submitting: star-submit $xml" | tee -a $record
-        star-submit $xml >> $record 2>&1
-        set rc = $status
+        # Run star-submit and show stdout+stderr immediately while also
+        # appending to the record file. Capture star-submit's exit code by
+        # writing it from the subshell into a temporary file.
+        set tmp = "$logdir/rc_$$.tmp"
+        ( star-submit $xml ; echo $status > $tmp ) |& tee -a $record
+        if ( -f $tmp ) then
+            set rc = `cat $tmp`
+            rm -f $tmp
+        else
+            # if tmp wasn't written something unexpected happened
+            set rc = 1
+        endif
         # If submission failed, log the error code
         if ($rc != 0) then
             echo "star-submit returned $rc for $xml" | tee -a $record

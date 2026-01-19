@@ -4,6 +4,10 @@ This document describes a compact, easy-to-use workflow and the helper scripts
 in this repository to generate STAR scheduler XML files, capture metadata, and
 submit jobs via `star-submit`.
 
+**Recommended usage:**  
+Create and work inside an empty folder called `submit`.  
+All script invocations below assume you are inside this `submit` directory, and the scripts are accessed via `../scripts/`.
+
 Files used
 - `templates/job_template.xml`  - XML template with placeholders filled by the generator
 - `scripts/generate_xmls.py`    - Python3 script to create XML files and write metadata
@@ -13,29 +17,31 @@ Files used
 Quick example
 1. Generate an XML into the GPFS project folder derived from the day tag.
 
-   The generator creates two subdirectories under the GPFS base for the
-   given daytag:
-   - `<gpfs-base>/submission/<daytag>/` : XML, METADATA, steering snapshot, and scheduler lists
-   - `<gpfs-base>/production/<daytag>/`  : final job outputs (`*.root`) and per-job stdout/stderr logs
+  The generator creates two subdirectories under the GPFS base for the
+  given daytag:
+  - `<gpfs-base>/submission/<daytag>/` : XML, METADATA, steering snapshot, and scheduler lists
+  - `<gpfs-base>/production/<daytag>/`  : final job outputs (`*.root`) and per-job stdout/stderr logs
 
 ```bash
-./scripts/generate_xmls.py \
+../scripts/generate_xmls.py \
   --daytag 251012 \
   --input-catalog "trgsetupname=pp500_production_2017,production=P20ic,filename~st_physics,filetype=daq_reco_picoDst,storage=local" \
-  --simulate
+  --simulate  
 ```
-
+or using a filelist:
+```bash
+../scripts/generate_xmls.py --daytag 251012 --input-list "../filelists/2017_pp_500GeV_picoDst_local.list" --simulate
+```
 2. Inspect generated XML and METADATA file in the `--output-dir`.
 
 3. Submit (small test):
 
 ```tcsh
 # perform a dry-run first to test if the script can locate the xml file
-./scripts/submit_all.sh /gpfs/mnt/gpfs01/star/pwg/matonoli/ea-trees-2017-pp500/20251012 --dry-run
+../scripts/submit_all.sh /gpfs/mnt/gpfs01/star/pwg/matonoli/ea-trees-2017-pp500/submission/251012/job_251012.xml --dry-run
 # then run without --dry-run to actually submit to the STAR scheduler
-./scripts/submit_all.sh /gpfs/mnt/gpfs01/star/pwg/matonoli/ea-trees-2017-pp500/20251012
+../scripts/submit_all.sh /gpfs/mnt/gpfs01/star/pwg/matonoli/ea-trees-2017-pp500/submission/251012/job_251012.xml
 ```
-
 
 Best practices included
 - The generator derives the GPFS output folder automatically from `--daytag` so
@@ -57,3 +63,4 @@ Requirements
 - This repository already contains `runPicoEASkim.C` used as the steering macro. The generator snapshots it.
 - `star-submit` and the STAR environment (starver, runtimes) are available on the submission host.
 - The GPFS destination must be writeable by the jobs. Adjust `--gpfs-dest` accordingly.
+

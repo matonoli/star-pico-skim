@@ -228,6 +228,8 @@ void StPicoEASkimmer::CreateHistograms() {
   hPrimaryDCAVsPt = new TH2D("hPrimaryDCAVsPt", "Primary track DCA vs. p_{T}; p_{T} (GeV/c); DCA (cm)", 200, 0., 20., 200, 0., 4.);
   hPrimaryDCAxy = new TH1D("hPrimaryDCAxy", "Primary track DCA_{xy}; DCA_{xy} (cm); Entries", 200, 0., 4.);
   hPrimaryDCAxyVsPt = new TH2D("hPrimaryDCAxyVsPt", "Primary track DCA_{xy} vs. p_{T}; p_{T} (GeV/c); DCA_{xy} (cm)", 200, 0., 20., 200, 0., 4.);
+  hPrimaryDCAs = new TH1D("hPrimaryDCAs", "Primary track signed DCA; signed DCA (cm); Entries", 200, -4., 4.);
+  hPrimaryDCAsVsPt = new TH2D("hPrimaryDCAsVsPt", "Primary track signed DCA vs. p_{T}; p_{T} (GeV/c); signed DCA (cm)", 200, 0., 20., 200, -4., 4.);
   hPrimaryDCAz = new TH1D("hPrimaryDCAz", "Primary track DCA_{z}; DCA_{z} (cm); Entries", 200, 0., 4.);
   hPrimaryDCAzVsPt = new TH2D("hPrimaryDCAzVsPt", "Primary track DCA_{z} vs. p_{T}; p_{T} (GeV/c); DCA_{z} (cm)", 200, 0., 20., 200, 0., 4.);
   hPrimaryDCAsVsDCAxy = new TH2D("hPrimaryDCAsVsDCAxy", "Primary track DCAxy vs. global DCAxy; global DCAxy (cm); DCAxy (cm)", 200, 0., 4., 200, 0., 4.);
@@ -247,7 +249,7 @@ void StPicoEASkimmer::CreateHistograms() {
 
   // BEMC QA histograms
   hPrimaryBemcE = new TH1D("hPrimaryBemcE", "Primary track matched cluster energy; Energy (GeV); Entries", 500, 0., 50.);
-  hPrimaryBemcEPVsPt = new TH2D("hPrimaryBemcEPVsPt", "Primary track E/p vs p_{T}; p_{T} (GeV/c); p/E", 200, 0., 20., 200, 0., 5.);
+  hPrimaryBemcEPVsPt = new TH2D("hPrimaryBemcEPVsPt", "Primary track E/p vs p_{T}; p_{T} (GeV/c); E/p", 200, 0., 20., 200, 0., 5.);
   hPrimaryBemcDeltaZVsPt = new TH2D("hPrimaryBemcDeltaZVsPt", "Primary track #Delta z vs p_{T}; p_{T} (GeV/c); #Delta z (cm)", 200, 0., 20., 200, -50., 50.);
   hPrimaryBemcDeltaPhiVsPt = new TH2D("hPrimaryBemcDeltaPhiVsPt", "Primary track #Delta #phi vs p_{T}; p_{T} (GeV/c); #Delta #phi (rad)", 200, 0., 20., 200, -0.1, 0.1);
   hPrimaryBemcDeltaZVsDeltaPhi = new TH2D("hPrimaryBemcDeltaZVsDeltaPhi", "Primary track #Delta z vs #Delta #phi; #Delta #phi (rad); #Delta z (cm)", 200, -0.1, 0.1, 200, -50., 50.);
@@ -319,12 +321,14 @@ void StPicoEASkimmer::CreateEATree()
   mEATree->Branch("track_pt", &mTrackPt);
   mEATree->Branch("track_eta", &mTrackEta);
   mEATree->Branch("track_phi", &mTrackPhi);
+  mEATree->Branch("track_charge", &mTrackCharge);
   mEATree->Branch("track_nHitsFit", &mTrackNHitsFit);
   mEATree->Branch("track_nHitsDedx", &mTrackNHitsDedx);
   mEATree->Branch("track_nHitsRatio", &mTrackNHitsRatio);
   mEATree->Branch("track_chi2", &mTrackChi2);
   mEATree->Branch("track_dcaXY", &mTrackDCAxy);
   mEATree->Branch("track_dcaZ", &mTrackDCAz);
+  mEATree->Branch("track_dcaS", &mTrackDCAs);
   mEATree->Branch("track_nSigmaPi", &mTrackNSigmaPi);
   mEATree->Branch("track_nSigmaK", &mTrackNSigmaK);
   mEATree->Branch("track_nSigmaP", &mTrackNSigmaP);
@@ -336,8 +340,6 @@ void StPicoEASkimmer::CreateEATree()
   mEATree->Branch("track_bemcE", &mTrackBemcE);
   mEATree->Branch("track_bemcZDist", &mTrackBemcZDist);
   mEATree->Branch("track_bemcPhiDist", &mTrackBemcPhiDist);
-  mEATree->Branch("track_bemcSmdNEta", &mTrackBemcSmdNEta);
-  mEATree->Branch("track_bemcSmdNPhi", &mTrackBemcSmdNPhi);
   mEATree->Branch("track_btowId", &mTrackBtowId);
   mEATree->Branch("track_btowE", &mTrackBtowE);
   mEATree->Branch("track_btowPhiDist", &mTrackBtowPhiDist);
@@ -423,7 +425,7 @@ Bool_t StPicoEASkimmer::EventCutForTree(StPicoEvent *event)
   return ( vtx.Z() >= mTreeCutVtxZ[0] && vtx.Z() <= mTreeCutVtxZ[1] &&
            vtx.Perp() >= mTreeCutVtxR[0] && vtx.Perp() <= mTreeCutVtxR[1] &&
            deltaVz >= mTreeCutDeltaVz[0] && deltaVz <= mTreeCutDeltaVz[1] &&
-           vtx.Z() >= mTreeCutVtxVpdZ[0] && vtx.Z() <= mTreeCutVtxVpdZ[1] &&
+           event->vzVpd() >= mTreeCutVtxVpdZ[0] && event->vzVpd() <= mTreeCutVtxVpdZ[1] &&
            nPrimaries >= mTreeCutNPrimariesMin &&
            IsGoodTrigger(event) );
 }
@@ -634,9 +636,14 @@ inline int StPicoEASkimmer::GetRunIndex(int runId) const {
                                              theEvent->primaryVertex().y()));
     float dcaz = TMath::Abs(theTrack->gDCAz(theEvent->primaryVertex().z()));
 
+    // Signed DCA: signed distance in xy between the pT vector and the DCA vector (different from DCAxy which is the xy of the DCA vector itself)
+    float dcas = theTrack->gDCAs(theEvent->primaryVertex());
+
     hPrimaryDCA->Fill(dca);
     hPrimaryDCAVsPt->Fill(theTrack->pPt(), dca);
     hPrimaryDCAxy->Fill(dcaxy);
+    hPrimaryDCAs->Fill(dcas);
+    hPrimaryDCAsVsPt->Fill(theTrack->pPt(), dcas);
     hPrimaryDCAxyVsPt->Fill(theTrack->pPt(), dcaxy);
     hPrimaryDCAz->Fill(dcaz);
     hPrimaryDCAzVsPt->Fill(theTrack->pPt(), dcaz);
@@ -791,12 +798,14 @@ inline int StPicoEASkimmer::GetRunIndex(int runId) const {
   mTrackPt.clear();
   mTrackEta.clear();
   mTrackPhi.clear();
+  mTrackCharge.clear();
   mTrackNHitsFit.clear();
   mTrackNHitsDedx.clear();
   mTrackNHitsRatio.clear();
   mTrackChi2.clear();
   mTrackDCAxy.clear();
   mTrackDCAz.clear();
+  mTrackDCAs.clear();
   mTrackNSigmaPi.clear();
   mTrackNSigmaK.clear();
   mTrackNSigmaP.clear();
@@ -808,8 +817,6 @@ inline int StPicoEASkimmer::GetRunIndex(int runId) const {
   mTrackBemcE.clear();
   mTrackBemcZDist.clear();
   mTrackBemcPhiDist.clear();
-  mTrackBemcSmdNEta.clear();
-  mTrackBemcSmdNPhi.clear();
   mTrackBtowId.clear();
   mTrackBtowE.clear();
   mTrackBtowPhiDist.clear();
@@ -824,14 +831,15 @@ inline int StPicoEASkimmer::GetRunIndex(int runId) const {
     if (!TrackCutForTree(theTrack)) continue;
     nTracksForTree++;
     
-    // pT, eta, phi
+    // pT, eta, phi, charge
     mTrackPt.push_back(theTrack->pPt());
     mTrackEta.push_back(theTrack->pMom().Eta());
     mTrackPhi.push_back(theTrack->pMom().Phi());
+    mTrackCharge.push_back(theTrack->charge());
 
     // nHitsFit, nHitsDedx, nHitsRatio
-  mTrackNHitsFit.push_back(static_cast<Short_t>(theTrack->nHitsFit()));
-  mTrackNHitsDedx.push_back(static_cast<Short_t>(theTrack->nHitsDedx()));
+    mTrackNHitsFit.push_back(static_cast<Short_t>(theTrack->nHitsFit()));
+    mTrackNHitsDedx.push_back(static_cast<Short_t>(theTrack->nHitsDedx()));
     if (theTrack->nHitsPoss() > 0) {
       mTrackNHitsRatio.push_back(static_cast<float>(theTrack->nHitsFit()) / theTrack->nHitsPoss());
     } else {
@@ -844,8 +852,10 @@ inline int StPicoEASkimmer::GetRunIndex(int runId) const {
     // DCA values (calculated as in previous track loop)
     float dcaXY = TMath::Abs(theTrack->gDCAxy(theEvent->primaryVertex().x(), theEvent->primaryVertex().y()));
     float dcaZ  = TMath::Abs(theTrack->gDCAz(theEvent->primaryVertex().z()));
+    float dcaS  = theTrack->gDCAs(theEvent->primaryVertex());
     mTrackDCAxy.push_back(dcaXY);
     mTrackDCAz.push_back(dcaZ);
+    mTrackDCAs.push_back(dcaS);
 
     // TPC PID
     mTrackNSigmaPi.push_back(theTrack->nSigmaPion());
@@ -854,17 +864,24 @@ inline int StPicoEASkimmer::GetRunIndex(int runId) const {
     mTrackNSigmaE.push_back(theTrack->nSigmaElectron());
 
     // TOF info (access via btofPidTraits)
+    // track has to have Tof hit, Tof pid traits existing, and match flag > 0
     if (theTrack->isTofTrack()) {
-      mTrackIsTofTrack.push_back(1);
+      
       StPicoBTofPidTraits *TofPidTrait =
       (StPicoBTofPidTraits*)mPicoDst->btofPidTraits(theTrack->bTofPidTraitsIndex());
-      if (TofPidTrait && TofPidTrait->btofBeta() > 0) {
-      mTrackBTofBeta.push_back(TofPidTrait->btofBeta());
-      float mass2 = theTrack->pPtot() * theTrack->pPtot() * (1.0 / (TofPidTrait->btofBeta() * TofPidTrait->btofBeta()) - 1.0);
-      mTrackMass2.push_back(mass2);
+
+      if (TofPidTrait && TofPidTrait->btofMatchFlag() > 0) {
+        mTrackIsTofTrack.push_back(1);
       } else {
-      mTrackBTofBeta.push_back(-9999.0f);
-      mTrackMass2.push_back(-9999.0f);
+        mTrackIsTofTrack.push_back(0);
+      }
+      if (TofPidTrait && TofPidTrait->btofBeta() > 0) {
+        mTrackBTofBeta.push_back(TofPidTrait->btofBeta());
+        float mass2 = theTrack->pPtot() * theTrack->pPtot() * (1.0 / (TofPidTrait->btofBeta() * TofPidTrait->btofBeta()) - 1.0);
+        mTrackMass2.push_back(mass2);
+      } else {
+        mTrackBTofBeta.push_back(-9999.0f);
+        mTrackMass2.push_back(-9999.0f);
       }
     } else {
       mTrackIsTofTrack.push_back(0);
@@ -880,8 +897,6 @@ inline int StPicoEASkimmer::GetRunIndex(int runId) const {
       mTrackBemcE.push_back(BemcPidTrait->bemcE());
       mTrackBemcZDist.push_back(BemcPidTrait->bemcZDist());
       mTrackBemcPhiDist.push_back(BemcPidTrait->bemcPhiDist());
-      mTrackBemcSmdNEta.push_back(static_cast<Short_t>(BemcPidTrait->bemcSmdNEta()));
-      mTrackBemcSmdNPhi.push_back(static_cast<Short_t>(BemcPidTrait->bemcSmdNPhi()));
       mTrackBtowId.push_back(static_cast<Short_t>(BemcPidTrait->btowId()));
       mTrackBtowE.push_back(BemcPidTrait->btowE());
       mTrackBtowPhiDist.push_back(BemcPidTrait->btowPhiDist());
@@ -890,8 +905,6 @@ inline int StPicoEASkimmer::GetRunIndex(int runId) const {
       mTrackBemcE.push_back(-9999.0f);
       mTrackBemcZDist.push_back(-9999.0f);
       mTrackBemcPhiDist.push_back(-9999.0f);
-      mTrackBemcSmdNEta.push_back(static_cast<Short_t>(-9999));
-      mTrackBemcSmdNPhi.push_back(static_cast<Short_t>(-9999));
       mTrackBtowId.push_back(static_cast<Short_t>(-9999));
       mTrackBtowE.push_back(-9999.0f);
       mTrackBtowPhiDist.push_back(-9999.0f);
@@ -902,8 +915,6 @@ inline int StPicoEASkimmer::GetRunIndex(int runId) const {
       mTrackBemcE.push_back(-9999.0f);
       mTrackBemcZDist.push_back(-9999.0f);
       mTrackBemcPhiDist.push_back(-9999.0f);
-      mTrackBemcSmdNEta.push_back(static_cast<Short_t>(-9999));
-      mTrackBemcSmdNPhi.push_back(static_cast<Short_t>(-9999));
       mTrackBtowId.push_back(static_cast<Short_t>(-9999));
       mTrackBtowE.push_back(-9999.0f);
       mTrackBtowPhiDist.push_back(-9999.0f);

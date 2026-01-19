@@ -234,6 +234,8 @@ class StPicoEASkimmer : public StMaker {
   TH2D *hPrimaryChi2VsPt;
   TH1D *hPrimaryDCA;
   TH2D *hPrimaryDCAVsPt;
+  TH1D *hPrimaryDCAs;
+  TH2D *hPrimaryDCAsVsPt;
   TH1D *hPrimaryDCAxy;
   TH2D *hPrimaryDCAxyVsPt;
   TH1D *hPrimaryDCAz;
@@ -321,12 +323,14 @@ class StPicoEASkimmer : public StMaker {
   std::vector<Float_t> mTrackPt;
   std::vector<Float_t> mTrackEta;
   std::vector<Float_t> mTrackPhi;
+  std::vector<Short_t> mTrackCharge;
   std::vector<Short_t> mTrackNHitsFit;
   std::vector<Short_t> mTrackNHitsDedx;
   std::vector<Float_t> mTrackNHitsRatio;
   std::vector<Float_t> mTrackChi2;
   std::vector<Float_t> mTrackDCAxy;
   std::vector<Float_t> mTrackDCAz;
+  std::vector<Float_t> mTrackDCAs;
   std::vector<Float_t> mTrackNSigmaPi;
   std::vector<Float_t> mTrackNSigmaK;
   std::vector<Float_t> mTrackNSigmaP;
@@ -338,8 +342,6 @@ class StPicoEASkimmer : public StMaker {
   std::vector<Float_t> mTrackBemcE;
   std::vector<Float_t> mTrackBemcZDist;
   std::vector<Float_t> mTrackBemcPhiDist;
-  std::vector<Short_t> mTrackBemcSmdNEta;
-  std::vector<Short_t> mTrackBemcSmdNPhi;
   std::vector<Short_t> mTrackBtowId;
   std::vector<Float_t> mTrackBtowE;
   std::vector<Float_t> mTrackBtowPhiDist;

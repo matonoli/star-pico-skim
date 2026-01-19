@@ -4,8 +4,8 @@
 <!--
   Generic STAR scheduler XML template for submitting StPicoEASkimmer jobs.
   The lightweight generator script (`scripts/generate_xmls.py`) will replace
-  placeholders like __BASEDIR__, __SRCDIR__, __DAYTAG__, __INPUT__ and
-  __SIMULATE__.
+  placeholders like _BASEDIR_, _SRCDIR_, _DAYTAG_, _INPUT_ and
+  _SIMULATE_.
 
   - Use fileListSyntax="xrootd" for local (DD) xrootd filelists
   - Keep simulateSubmission toggle to allow dry-runs
@@ -13,7 +13,7 @@
   - Use informative output filenames including a day tag YYMMDD
 -->
 
-<job name="PicoEASkim" maxFilesPerProcess="80" fileListSyntax="xrootd" softLimits="true" filesPerHour="40" simulateSubmission="__SIMULATE__">
+<job name="PicoEASkim" maxFilesPerProcess="120" fileListSyntax="xrootd" softLimits="true" filesPerHour="60" simulateSubmission="__SIMULATE__">
 
   <command>
     date
@@ -24,18 +24,17 @@
     echo "Contents of working dir:"
     ls -la
     # Run the ROOT macro (pass FILELIST and job index from scheduler)
-    root -q -b -l runPicoEASkim.C\("$FILELIST","__$DAYTAG___OUTPREFIX___$JOBINDEX.root",-1\)
-    # Output name will be: <out-prefix>_<daytag>_<jobindex>.root
-    root -q -b -l runPicoEASkim.C\("$FILELIST","__OUTPREFIX__\_\__DAYTAG__\_$JOBINDEX.root",-1\)
+    # Output name will be: out-prefix_daytag_jobindex.root
+    root -q -b -l runPicoEASkim.C\(\"$FILELIST\",\"__OUTPREFIX__\_\__DAYTAG__\_$JOBINDEX.root\",-1\)
     echo "Finished run at `date`"
   </command>
 
-  <!-- Input: catalog or filelist. The generator substitutes __INPUT__ -->
+  <!-- Input: catalog or filelist. The generator substitutes _INPUT_ -->
   __INPUT__
 
   <!-- Two directories under the day-tag folder are used:
-       - __SUBMISSION_DIR__ : submission artifacts (XML, METADATA, steering, scheduler lists)
-       - __OUTPUT_DIR__     : production outputs (*.root) and per-job stdout/stderr
+       - _SUBMISSION_DIR_ : submission artifacts (XML, METADATA, steering, scheduler lists)
+       - _OUTPUT_DIR_     : production outputs (*.root) and per-job stdout/stderr
   -->
 
   <stdout URL="file:__OUTPUT_DIR__/logs/$JOBID.out"/>

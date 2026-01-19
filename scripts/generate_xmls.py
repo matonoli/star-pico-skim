@@ -88,6 +88,14 @@ def main():
     gpfs_dest = output_dir
     os.makedirs(submission_dir, exist_ok=True)
     os.makedirs(output_dir, exist_ok=True)
+    # Create scheduler-specific subdirectories the scheduler expects to exist
+    # (Location/ScriptLocation/ListLocation). Do this now to avoid star-submit
+    # failing if those directories are missing.
+    os.makedirs(os.path.join(submission_dir, 'sched'), exist_ok=True)
+    os.makedirs(os.path.join(submission_dir, 'sched', 'csh'), exist_ok=True)
+    os.makedirs(os.path.join(submission_dir, 'sched', 'lists'), exist_ok=True)
+    # Ensure production logs directory exists so per-job stdout/stderr can be written
+    os.makedirs(os.path.join(output_dir, 'logs'), exist_ok=True)
     # read template
     tpl = read_template()
 
@@ -100,7 +108,8 @@ def main():
 
     # copy steering macro
     steering_src = os.path.join(args.srcdir, 'runPicoEASkim.C')
-    steering_snapshot = write_snapshot(steering_src, os.path.join(args.output_dir, 'steering_snapshot'))
+    # write steering snapshot into the submission directory
+    steering_snapshot = write_snapshot(steering_src, os.path.join(submission_dir, 'steering_snapshot'))
 
     # fill placeholders
     day = args.daytag
@@ -112,6 +121,7 @@ def main():
     sandbox_files = []
     sandbox_files.append(f'      <File>file:{args.srcdir}/StRoot/</File>')
     sandbox_files.append(f'      <File>file:{args.srcdir}/runPicoEASkim.C</File>')
+    sandbox_files.append(f'      <File>file:{args.srcdir}/runlist2017.txt</File>')
     sl_dir = os.path.join(args.srcdir, '.sl73_gcc485')
     if os.path.isdir(sl_dir):
         sandbox_files.append(f'      <File>file:{sl_dir}</File>')
